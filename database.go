@@ -98,8 +98,8 @@ func (db DB) DumpNodes() (nodes []*Node, err error) {
 		nodes[i] = node
 
 		// Scan all of the values into it.
-		err = rows.Scan(&node.Addr, &node.Hostname &node.OwnerName, &node.Latitude,
-			&node.Longitude, &node.Status)
+		err = rows.Scan(&node.Addr, &node.Hostname, &node.OwnerName,
+			&node.Latitude, &node.Longitude, &node.Status)
 		if err != nil {
 			return
 		}
