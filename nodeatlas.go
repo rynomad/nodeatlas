@@ -153,6 +153,7 @@ func TestDatabase(db DB) {
 
 	node := &Node{
 		Addr:       IP(net.ParseIP("ff00::1")),
+		Hostname:   "node.atlas",
 		OwnerName:  "nodeatlas",
 		OwnerEmail: "admin@example.org",
 		Latitude:   80.01010,

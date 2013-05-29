@@ -100,6 +100,7 @@ func (*Api) PostNode(ctx *jas.Context) {
 		return
 	}
 	node.Addr = ip
+	node.Hostname = ctx.RequireString("hostname")
 	node.Latitude = ctx.RequireFloat("latitude")
 	node.Longitude = ctx.RequireFloat("longitude")
 	node.OwnerName = ctx.RequireString("name")

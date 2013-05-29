@@ -23,6 +23,7 @@ func (db DB) InitializeTables() (err error) {
 	// First, create the 'nodes' table.
 	_, err = db.Query(`CREATE TABLE IF NOT EXISTS nodes (
 address BINARY(16) PRIMARY KEY,
+hostname VARCHAR(255) NOT NULL,
 owner VARCHAR(255) NOT NULL,
 email VARCHAR(255) NOT NULL,
 lat FLOAT NOT NULL,
@@ -34,6 +35,7 @@ updated DATETIME DEFAULT CURRENT_TIMESTAMP);`)
 	}
 	_, err = db.Query(`CREATE TABLE IF NOT EXISTS nodes_cached (
 address BINARY(16) PRIMARY KEY,
+hostname VARCHAR(255) NOT NULL,
 owner VARCHAR(255) NOT NULL,
 email VARCHAR(255) NOT NULL,
 lat FLOAT NOT NULL,
@@ -81,7 +83,7 @@ func (db DB) DumpNodes() (nodes []*Node, err error) {
 	}
 
 	// Perform the query.
-	rows, err := db.Query("SELECT address,owner,lat,lon,status FROM nodes UNION SELECT address,owner,lat,lon,status FROM nodes_cached;")
+	rows, err := db.Query("SELECT address,hostname,owner,lat,lon,status FROM nodes UNION SELECT address,hostname,owner,lat,lon,status FROM nodes_cached;")
 	if err != nil {
 		l.Errf("Error dumping database: %s", err)
 		return
@@ -96,7 +98,7 @@ func (db DB) DumpNodes() (nodes []*Node, err error) {
 		nodes[i] = node
 
 		// Scan all of the values into it.
-		err = rows.Scan(&node.Addr, &node.OwnerName, &node.Latitude,
+		err = rows.Scan(&node.Addr, &node.Hostname &node.OwnerName, &node.Latitude,
 			&node.Longitude, &node.Status)
 		if err != nil {
 			return
@@ -110,12 +112,12 @@ func (db DB) DumpNodes() (nodes []*Node, err error) {
 func (db DB) AddNode(node *Node) (err error) {
 	// Inserts a new node into the database
 	stmt, err := db.Prepare(`INSERT INTO nodes
-(address, owner, email, lat, lon, status)
-VALUES(?, ?, ?, ?, ?, ?)`)
+(address, owner, hostname, email, lat, lon, status)
+VALUES(?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		return
 	}
-	_, err = stmt.Exec([]byte(node.Addr), node.OwnerName, node.OwnerEmail, node.Latitude, node.Longitude, node.Status)
+	_, err = stmt.Exec([]byte(node.Addr), node.OwnerName, node.Hostname, node.OwnerEmail, node.Latitude, node.Longitude, node.Status)
 	stmt.Close()
 	return
 }
@@ -125,12 +127,12 @@ VALUES(?, ?, ?, ?, ?, ?)`)
 func (db DB) UpdateNode(node *Node) (err error) {
 	// Updates an existing node in the database
 	stmt, err := db.Prepare(`UPDATE nodes SET
-owner = ?, lat = ?, lon = ?, status = ?
+owner = ?, hostname = ?, lat = ?, lon = ?, status = ?
 WHERE address = ?`)
 	if err != nil {
 		return
 	}
-	_, err = stmt.Exec(node.OwnerName, node.Latitude, node.Longitude, node.Status, []byte(node.Addr))
+	_, err = stmt.Exec(node.OwnerName, node.Hostname, node.Latitude, node.Longitude, node.Status, []byte(node.Addr))
 	stmt.Close()
 	return
 }
@@ -153,11 +155,11 @@ func (db DB) DeleteNode(addr IP) (err error) {
 // node matches, however, both return values will be nil.
 func (db DB) GetNode(addr IP) (node *Node, err error) {
 	// Retrieves the node with the given address from the database
-	stmt, err := db.Prepare(`SELECT owner, email, lat, lon, status
+	stmt, err := db.Prepare(`SELECT owner, email, hostname, lat, lon, status
 FROM nodes
 WHERE address = ?
 UNION
-SELECT owner, email, lat, lon, status
+SELECT owner, email, hostname, lat, lon, status
 FROM nodes_cached
 WHERE address = ?
 LIMIT 1`)
@@ -171,7 +173,7 @@ LIMIT 1`)
 
 	// Perform the actual query.
 	row := stmt.QueryRow(baddr, baddr)
-	err = row.Scan(&node.OwnerName, &node.OwnerEmail, &node.Latitude, &node.Longitude, &node.Status)
+	err = row.Scan(&node.OwnerName, &node.OwnerEmail, &node.Hostname, &node.Latitude, &node.Longitude, &node.Status)
 	stmt.Close()
 
 	// If the error is of the particular type sql.ErrNoRows, it simply
@@ -186,12 +188,12 @@ LIMIT 1`)
 
 func (db DB) CacheNode(node *Node, source string, expiry int) (err error) {
 	stmt, err := db.Prepare(`INSERT INTO nodes_cached
-(address, owner, email, lat, lon, status, source, expiration)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?)`)
+(address, owner, email, hostname, lat, lon, status, source, expiration)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		return
 	}
-	_, err = stmt.Exec(node.Addr, node.OwnerName, node.OwnerEmail, node.Latitude, node.Longitude, node.Status)
+	_, err = stmt.Exec(node.Addr, node.OwnerName, node.Hostname, node.OwnerEmail, node.Latitude, node.Longitude, node.Status)
 	stmt.Close()
 	return
 }

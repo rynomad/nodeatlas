@@ -22,6 +22,10 @@ const (
 type Node struct {
 	/* Required Fields */
 
+	// The primary human identifier for nodes, because ain't nobody got time to memorize ipv6
+	// Format: hostname.tld  (hostname should be unique to a TLD, HypeDNS allowed.)
+	Hostname string
+
 	// Status represents the indended availability for the node. For
 	// example, StatusActive, StatusPlanned, etc.
 	Status int
